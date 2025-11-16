@@ -1,14 +1,36 @@
 # React Knowledge Scope & Patterns Guide
 
-## About This Project
+## How to Use This Document with Code Generation Agents
 
-This is an IT-INCUBATOR educational project demonstrating fundamental React + TypeScript patterns. Use this as a **reference template** for building similar applications with consistent code style and architecture.
+This document is a **generic style & architecture guide** for small React + TypeScript applications.
 
-**Tech Stack:**
+When used as a prompt in tools (Codex CLI, Claude Code, etc.):
+
+- Treat this file as a **pattern library and coding style guide**, not as a specification of a concrete "todo list" project.
+- Always:
+  - Choose a **domain, entities, UI and features** based on the current task or user request.
+  - Apply the **same React + TypeScript patterns and architecture style** shown in this guide.
+- Never:
+  - Recreate the original educational app described in examples (todo list, same buttons, same filters, same entity names).
+  - Copy the same domain objects (`Task`, `TodolistItem`, etc.) unless the user explicitly asks for a todo app.
+- All code snippets below are **examples only**. When generating a new project, you must:
+  - Use **different names, entities, and UI controls** suitable for the new subject area.
+  - Keep only the **patterns and ideas** (state structure, handlers, immutable updates, etc.).
+
+---
+
+## About This Guide
+
+This guide is based on an IT-INCUBATOR educational project and demonstrates fundamental React + TypeScript patterns.  
+Use this as a **reference template** for building **any small React application** with consistent code style and architecture.
+
+**Tech Stack (recommended baseline):**
 - React 19.0.0 (Functional Components + Hooks)
 - TypeScript 5.7.2
 - Vite 6.0.6
 - pnpm (package manager)
+
+You may adjust versions and tooling when needed, but keep the patterns and simplicity level similar.
 
 ---
 
@@ -18,34 +40,46 @@ This is an IT-INCUBATOR educational project demonstrating fundamental React + Ty
 
 **Pattern: Multiple Independent State Variables**
 
+Example from a simple list-based app (for a todo-like project):
+
 ```typescript
-// src/App.tsx:15-21
+// Example: src/App.tsx
 const [filter, setFilter] = useState<FilterValues>('all')
-const [tasks, setTasks] = useState<Task[]>([
+const [items, setItems] = useState<Item[]>([
   { id: v1(), title: 'HTML&CSS', isDone: true },
   { id: v1(), title: 'JS', isDone: true },
   { id: v1(), title: 'ReactJS', isDone: false },
 ])
-```
+````
+
+When generating a new project:
+
+* Replace `Item`, `FilterValues`, `isDone` with domain-specific names (e.g. `Product`, `CategoryFilter`, `isAvailable`), but keep:
+
+    * `useState<...>` with explicit generics
+    * separate state for independent concerns
+    * array state for collections.
 
 **Key Concepts:**
-- ✅ Explicit TypeScript generics for type safety: `useState<FilterValues>`, `useState<Task[]>`
-- ✅ Initial state with default values
-- ✅ Separate state variables for independent concerns (filter vs tasks)
-- ✅ Array state for collections of data
+
+* Explicit TypeScript generics for type safety: `useState<FilterValues>`, `useState<Item[]>`
+* Initial state with default values
+* Separate state variables for independent concerns (e.g. filter vs data list)
+* Array state for collections of data
 
 **Pattern: Local Component State**
 
 ```typescript
-// src/TodolistItem.tsx:26-27
-const [taskTitle, setTaskTitle] = useState('')
+// Example: src/ListWidget.tsx
+const [itemTitle, setItemTitle] = useState('')
 const [error, setError] = useState<string | null>(null)
 ```
 
 **Key Concepts:**
-- ✅ UI state managed in the component that owns it
-- ✅ Nullable types: `string | null` for optional error messages
-- ✅ String state for controlled input fields
+
+* UI state managed in the component that owns it
+* Nullable types for optional data: `string | null`
+* String state for controlled input fields
 
 ---
 
@@ -54,8 +88,8 @@ const [error, setError] = useState<string | null>(null)
 **Pattern: Domain Types**
 
 ```typescript
-// src/App.tsx:6-12
-export type Task = {
+// Example: src/App.tsx
+export type Item = {
   id: string
   title: string
   isDone: boolean
@@ -64,32 +98,38 @@ export type Task = {
 export type FilterValues = 'all' | 'active' | 'completed'
 ```
 
+When generating new apps, replace `Item` and `FilterValues` with appropriate names and literals, but keep:
+
+* `type` for object shapes and unions
+* exported types for sharing between components
+* string literal unions for fixed sets of values.
+
 **Key Concepts:**
-- ✅ `type` keyword for object shapes and unions
-- ✅ Export types that are shared across components
-- ✅ String literal unions for fixed sets of values
-- ✅ Descriptive property names (isDone, not just done)
+
+* `type` keyword for object shapes and unions
+* Export types that are shared across components
+* String literal unions for fixed sets of values
+* Descriptive property names (e.g. `isDone`, `isActive`, `isArchived`)
 
 **Pattern: Component Props Interface**
 
 ```typescript
-// src/TodolistItem.tsx:5-13
 type Props = {
   title: string
-  tasks: Task[]
-  deleteTask: (taskId: string) => void
+  items: Item[]
+  deleteItem: (itemId: string) => void
   changeFilter: (filter: FilterValues) => void
-  createTask: (title: string) => void
-  changeTaskStatus: (taskId: string, isDone: boolean) => void
+  createItem: (title: string) => void
+  changeItemStatus: (itemId: string, isDone: boolean) => void
   filter: FilterValues
 }
 ```
 
 **Key Concepts:**
-- ✅ Function types with explicit parameter names
-- ✅ void return type for callbacks
-- ✅ Group all props in a single `Props` type
-- ✅ Reference domain types (Task, FilterValues)
+
+* Function types with explicit parameter names and `void` return type
+* Group all props in a single `Props` type
+* Reference domain types (Item, FilterValues)
 
 ---
 
@@ -98,42 +138,40 @@ type Props = {
 **Pattern: Array Filtering (Remove Item)**
 
 ```typescript
-// src/App.tsx:23-28
-const deleteTask = (taskId: string) => {
-  const filteredTasks = tasks.filter(task => {
-    return task.id !== taskId
-  })
-  setTasks(filteredTasks)
+const deleteItem = (itemId: string) => {
+  const filteredItems = items.filter(item => item.id !== itemId)
+  setItems(filteredItems)
 }
 ```
 
 **Pattern: Array Prepending (Add Item)**
 
 ```typescript
-// src/App.tsx:42-46
-const createTask = (title: string) => {
-  const newTask = {id: v1(), title, isDone: false}
-  const newTasks = [newTask, ...tasks]
-  setTasks(newTasks)
+const createItem = (title: string) => {
+  const newItem = { id: v1(), title, isDone: false }
+  const newItems = [newItem, ...items]
+  setItems(newItems)
 }
 ```
 
 **Pattern: Array Mapping (Update Item)**
 
 ```typescript
-// src/App.tsx:48-51
-const changeTaskStatus = (taskId: string, isDone: boolean) => {
-  const newState = tasks.map(task => task.id == taskId ? { ...task, isDone } : task)
-  setTasks(newState)
+const changeItemStatus = (itemId: string, isDone: boolean) => {
+  const newState = items.map(item =>
+    item.id === itemId ? { ...item, isDone } : item
+  )
+  setItems(newState)
 }
 ```
 
 **Key Concepts:**
-- ✅ Never mutate state directly
-- ✅ Use `.filter()` to remove items
-- ✅ Use spread operator `[newItem, ...array]` to prepend
-- ✅ Use `.map()` with object spread `{ ...task, isDone }` to update specific items
-- ✅ Create new variables before calling setState
+
+* Never mutate state directly
+* Use `.filter()` to remove items
+* Use spread operator `[newItem, ...array]` to prepend
+* Use `.map()` with object spread `{ ...item, isDone }` to update specific items
+* Create new variables before calling `setState`
 
 ---
 
@@ -142,7 +180,6 @@ const changeTaskStatus = (taskId: string, isDone: boolean) => {
 **Pattern: Callback Functions in Parent Component**
 
 ```typescript
-// src/App.tsx:30-32
 const changeFilter = (filter: FilterValues) => {
   setFilter(filter)
 }
@@ -151,34 +188,33 @@ const changeFilter = (filter: FilterValues) => {
 **Pattern: Event Handlers Inside map() Loop**
 
 ```typescript
-// src/TodolistItem.tsx:66-73
-const deleteTaskHandler = () => {
-  deleteTask(task.id)
+const deleteItemHandler = () => {
+  deleteItem(item.id)
 }
 
-const changeTaskStatusHandler = (e: ChangeEvent<HTMLInputElement>) => {
+const changeItemStatusHandler = (e: ChangeEvent<HTMLInputElement>) => {
   const newStatusValue = e.currentTarget.checked
-  changeTaskStatus(task.id, newStatusValue)
+  changeItemStatus(item.id, newStatusValue)
 }
 ```
 
 **Pattern: Keyboard Event Handling**
 
 ```typescript
-// src/TodolistItem.tsx:44-48
-const createTaskOnEnterHandler = (event: KeyboardEvent<HTMLInputElement>) => {
+const createItemOnEnterHandler = (event: KeyboardEvent<HTMLInputElement>) => {
   if (event.key === 'Enter') {
-    createTaskHandler()
+    createItemHandler()
   }
 }
 ```
 
 **Key Concepts:**
-- ✅ Define handlers inside component function
-- ✅ Use specific event types: `ChangeEvent<HTMLInputElement>`, `KeyboardEvent<HTMLInputElement>`
-- ✅ Create wrapper handlers inside `.map()` to capture loop variables (task.id)
-- ✅ Extract values before calling callbacks: `e.currentTarget.checked`
-- ✅ Handler naming convention: `actionHandler` or `actionSubjectHandler`
+
+* Define handlers inside component function
+* Use specific event types: `ChangeEvent<HTMLInputElement>`, `KeyboardEvent<HTMLInputElement>`
+* Create wrapper handlers inside `.map()` to capture loop variables
+* Extract values before calling callbacks: `e.currentTarget.checked`
+* Handler naming convention: `actionHandler` or `actionSubjectHandler`
 
 ---
 
@@ -187,44 +223,46 @@ const createTaskOnEnterHandler = (event: KeyboardEvent<HTMLInputElement>) => {
 **Pattern: Input Field with Validation**
 
 ```typescript
-// src/TodolistItem.tsx:26-42
-const [taskTitle, setTaskTitle] = useState('')
+const [itemTitle, setItemTitle] = useState('')
 const [error, setError] = useState<string | null>(null)
 
-const createTaskHandler = () => {
-  const trimmedTitle = taskTitle.trim()
+const createItemHandler = () => {
+  const trimmedTitle = itemTitle.trim()
   if (trimmedTitle !== '') {
-    createTask(trimmedTitle)
-    setTaskTitle('')
+    createItem(trimmedTitle)
+    setItemTitle('')
   } else {
     setError('Title is required')
   }
 }
 
-const changeTaskTitleHandler = (event: ChangeEvent<HTMLInputElement>) => {
-  setTaskTitle(event.currentTarget.value)
-  setError(null)  // Clear error on user input
+const changeItemTitleHandler = (event: ChangeEvent<HTMLInputElement>) => {
+  setItemTitle(event.currentTarget.value)
+  setError(null)
 }
 ```
 
 **JSX:**
-```typescript
-// src/TodolistItem.tsx:54-59
-<input className={error ? 'error' : ''}
-       value={taskTitle}
-       onChange={changeTaskTitleHandler}
-       onKeyDown={createTaskOnEnterHandler}/>
-<Button title={'+'} onClick={createTaskHandler}/>
-{error && <div className={'error-message'}>{error}</div>}
+
+```tsx
+<input
+  className={error ? 'error' : ''}
+  value={itemTitle}
+  onChange={changeItemTitleHandler}
+  onKeyDown={createItemOnEnterHandler}
+/>
+<Button title="+" onClick={createItemHandler} />
+{error && <div className="error-message">{error}</div>}
 ```
 
 **Key Concepts:**
-- ✅ `value` prop bound to state
-- ✅ `onChange` handler updates state
-- ✅ Validation before submitting
-- ✅ Clear input after successful submission
-- ✅ Clear error on user input for better UX
-- ✅ `.trim()` to prevent whitespace-only inputs
+
+* `value` prop bound to state
+* `onChange` handler updates state
+* Validation before submitting
+* Clear input after successful submission
+* Clear error on user input
+* `.trim()` to prevent whitespace-only inputs
 
 ---
 
@@ -232,39 +270,37 @@ const changeTaskTitleHandler = (event: ChangeEvent<HTMLInputElement>) => {
 
 **Pattern: Ternary Operator**
 
-```typescript
-// src/TodolistItem.tsx:54
+```tsx
 <input className={error ? 'error' : ''} />
-
-// src/TodolistItem.tsx:76
-<li className={task.isDone ? 'is-done' : ''}>
+<li className={item.isDone ? 'is-done' : ''}>
 ```
 
 **Pattern: Logical AND (&&)**
 
-```typescript
-// src/TodolistItem.tsx:59
-{error && <div className={'error-message'}>{error}</div>}
+```tsx
+{error && <div className="error-message">{error}</div>}
 ```
 
 **Pattern: Conditional Content Blocks**
 
-```typescript
-// src/TodolistItem.tsx:61-85
-{tasks.length === 0 ? (
-  <p>Тасок нет</p>
+```tsx
+{items.length === 0 ? (
+  <p>No items</p>
 ) : (
   <ul>
-    {tasks.map(task => { /* ... */ })}
+    {items.map(item => {
+      // ...
+    })}
   </ul>
 )}
 ```
 
 **Key Concepts:**
-- ✅ Ternary for className toggling: `condition ? 'class' : ''`
-- ✅ `&&` for optional rendering
-- ✅ Ternary for either/or rendering: `condition ? <A /> : <B />`
-- ✅ Check array length before mapping
+
+* Ternary for className toggling: `condition ? 'class' : ''`
+* `&&` for optional rendering
+* Ternary for either/or rendering: `condition ? <A /> : <B />`
+* Check array length before mapping
 
 ---
 
@@ -272,35 +308,36 @@ const changeTaskTitleHandler = (event: ChangeEvent<HTMLInputElement>) => {
 
 **Pattern: map() with Unique Keys**
 
-```typescript
-// src/TodolistItem.tsx:65-83
-{tasks.map(task => {
-  const deleteTaskHandler = () => {
-    deleteTask(task.id)
-  }
+```tsx
+{items.map(item => {
+  const deleteItemHandler = () => deleteItem(item.id)
 
-  const changeTaskStatusHandler = (e: ChangeEvent<HTMLInputElement>) => {
+  const changeItemStatusHandler = (e: ChangeEvent<HTMLInputElement>) => {
     const newStatusValue = e.currentTarget.checked
-    changeTaskStatus(task.id, newStatusValue)
+    changeItemStatus(item.id, newStatusValue)
   }
 
   return (
-    <li key={task.id} className={task.isDone ? 'is-done' : ''}>
-      <input type="checkbox" checked={task.isDone}
-             onChange={changeTaskStatusHandler}/>
-      <span>{task.title}</span>
-      <Button title={'x'} onClick={deleteTaskHandler}/>
+    <li key={item.id} className={item.isDone ? 'is-done' : ''}>
+      <input
+        type="checkbox"
+        checked={item.isDone}
+        onChange={changeItemStatusHandler}
+      />
+      <span>{item.title}</span>
+      <Button title="x" onClick={deleteItemHandler} />
     </li>
   )
 })}
 ```
 
 **Key Concepts:**
-- ✅ Always provide `key` prop with unique identifier
-- ✅ Define handlers inside `.map()` to access current item
-- ✅ Return JSX from map callback
-- ✅ Use controlled checkbox: `checked={task.isDone}`
-- ✅ Combine conditional styling with list items
+
+* Always provide `key` prop with a unique identifier
+* Define handlers inside `.map()` to access current item
+* Return JSX from `map` callback
+* Use controlled checkbox: `checked={item.isDone}`
+* Combine conditional styling with list items
 
 ---
 
@@ -308,17 +345,16 @@ const changeTaskTitleHandler = (event: ChangeEvent<HTMLInputElement>) => {
 
 **Pattern: Pass State and Callbacks Down**
 
-```typescript
-// src/App.tsx:53-61
+```tsx
 return (
   <div className="app">
-    <TodolistItem
-      title="What to learn"
-      tasks={filteredTasks}
-      deleteTask={deleteTask}
+    <ListWidget
+      title="Example list"
+      items={filteredItems}
+      deleteItem={deleteItem}
       changeFilter={changeFilter}
-      createTask={createTask}
-      changeTaskStatus={changeTaskStatus}
+      createItem={createItem}
+      changeItemStatus={changeItemStatus}
       filter={filter}
     />
   </div>
@@ -328,23 +364,23 @@ return (
 **Pattern: Props Destructuring**
 
 ```typescript
-// src/TodolistItem.tsx:16-24
 const {
   title,
-  tasks,
-  deleteTask,
+  items,
+  deleteItem,
   changeFilter,
-  createTask,
-  changeTaskStatus,
+  createItem,
+  changeItemStatus,
   filter,
 } = props
 ```
 
 **Key Concepts:**
-- ✅ Parent owns state, child receives via props
-- ✅ Callbacks passed down for child-to-parent communication
-- ✅ Destructure props for cleaner code
-- ✅ Explicit prop passing (no prop spreading)
+
+* Parent owns state, child receives via props
+* Callbacks passed down for child-to-parent communication
+* Destructure props for cleaner code
+* Explicit prop passing (no prop spreading)
 
 ---
 
@@ -353,21 +389,21 @@ const {
 **Pattern: Filter Data Before Rendering**
 
 ```typescript
-// src/App.tsx:34-40
-let filteredTasks = tasks
+let filteredItems = items
 if (filter === 'active') {
-  filteredTasks = tasks.filter(task => !task.isDone)
+  filteredItems = items.filter(item => !item.isDone)
 }
 if (filter === 'completed') {
-  filteredTasks = tasks.filter(task => task.isDone)
+  filteredItems = items.filter(item => item.isDone)
 }
 ```
 
 **Key Concepts:**
-- ✅ Compute derived data in component body (not in state)
-- ✅ Use `let` for reassignable computed values
-- ✅ Filter/transform before passing to child components
-- ✅ Simple if statements for multiple conditions
+
+* Compute derived data in component body (not in state)
+* Use `let` for reassignable computed values
+* Filter/transform before passing to child components
+* Simple `if` statements for multiple conditions
 
 ---
 
@@ -376,75 +412,85 @@ if (filter === 'completed') {
 **Pattern: Reusable UI Components**
 
 ```typescript
-// src/Button.tsx:1-9
-type Props = {
+type ButtonProps = {
   title: string
   onClick?: () => void
   className?: string
 }
 
-export const Button = ({ title, onClick, className }: Props) => {
-  return <button className={className} onClick={onClick}>{title}</button>
+export const Button = ({ title, onClick, className }: ButtonProps) => {
+  return (
+    <button className={className} onClick={onClick}>
+      {title}
+    </button>
+  )
 }
 ```
 
 **Pattern: Using Reusable Components**
 
-```typescript
-// src/TodolistItem.tsx:58
-<Button title={'+'} onClick={createTaskHandler}/>
+```tsx
+<Button title="+" onClick={createItemHandler} />
 
-// src/TodolistItem.tsx:87-95
-<Button className={filter === 'all' ? 'active-filter' : ''}
-        title={'All'}
-        onClick={() => changeFilter('all')}/>
+<Button
+  className={filter === 'all' ? 'active-filter' : ''}
+  title="All"
+  onClick={() => changeFilter('all')}
+/>
 ```
 
 **Key Concepts:**
-- ✅ Optional props with `?`
-- ✅ Destructure props in function parameters
-- ✅ Single responsibility components
-- ✅ Inline arrow functions for callbacks with arguments: `() => changeFilter('all')`
+
+* Optional props with `?`
+* Destructure props in function parameters
+* Single-responsibility components
+* Inline arrow functions for callbacks with arguments
 
 ---
 
 ## Naming Conventions
 
 ### Functions
-- **State setters:** `setTaskTitle`, `setError`, `setFilter`
-- **Event handlers:** `createTaskHandler`, `changeTaskTitleHandler`, `deleteTaskHandler`
-- **Business logic:** `deleteTask`, `createTask`, `changeTaskStatus`, `changeFilter`
+
+* State setters: `setItemTitle`, `setError`, `setFilter`
+* Event handlers: `createItemHandler`, `changeItemTitleHandler`, `deleteItemHandler`
+* Business logic: `deleteItem`, `createItem`, `changeItemStatus`, `changeFilter`
 
 ### Components
-- **PascalCase:** `App`, `TodolistItem`, `Button`
-- **Named exports:** `export const ComponentName`
+
+* PascalCase: `App`, `ListWidget`, `Button`
+* Named exports: `export const ComponentName`
 
 ### Variables
-- **camelCase:** `taskTitle`, `filteredTasks`, `newTask`
-- **Descriptive names:** `trimmedTitle`, `newStatusValue`
+
+* camelCase: `itemTitle`, `filteredItems`, `newItem`
+* Descriptive names: `trimmedTitle`, `newStatusValue`
 
 ---
 
 ## File Structure Pattern
 
-```
+Recommended minimal structure for small apps following this guide:
+
+```text
 src/
-├── App.tsx              # Container component (state + logic)
-├── TodolistItem.tsx     # Presentational component (UI + local state)
-├── Button.tsx           # Reusable UI component
-├── App.css             # Component-specific styles
-└── index.css           # Global styles
+├── App.tsx          # Container/root component (state + logic)
+├── ListWidget.tsx   # Presentational component (UI + local state)
+├── Button.tsx       # Reusable UI component
+├── App.css          # Component-specific styles
+└── index.css        # Global styles
 ```
 
 **Organization Principles:**
-- ✅ One component per file
-- ✅ Matching filename and component name
-- ✅ Types defined in same file where component is
-- ✅ Export shared types from domain file (App.tsx)
+
+* One component per file
+* Matching filename and component name
+* Types defined in the same file where component is, or exported from a small domain file
+* Shared domain types exported and reused
 
 ---
 
-## Development Setup
+## Development Setup (Example)
 
 ```bash
 # Install dependencies
@@ -460,40 +506,45 @@ pnpm build
 pnpm test
 ```
 
+You can adapt tooling/commands for other environments (Create React App, Next.js, etc.) while keeping the same React patterns.
+
 ---
 
 ## Apply These Patterns to New Projects
 
-Use this project as a template when building:
-- Todo apps, note-taking apps, task managers
-- CRUD applications with lists
-- Apps with filtering/searching functionality
-- Forms with validation
-- Any app with array-based state
+Use this guide as a template when building:
 
-**Key Patterns to Reuse:**
-1. useState for state management
-2. TypeScript types for props and domain models
-3. Immutable state updates (map, filter, spread)
-4. Event handler naming and structure
-5. Controlled components pattern
-6. Conditional rendering techniques
-7. List rendering with keys
-8. Props drilling for component communication
-9. Computed/derived values from state
-10. Component composition with reusable UI elements
+* Todo apps, note-taking apps, task managers
+* CRUD applications with lists
+* Apps with filtering/searching functionality
+* Forms with validation
+* Any app with array-based state
+
+When generating a new project in another domain:
+
+* Keep the patterns (state shape, handlers, immutability, controlled components, composition).
+* Change:
+
+    * Subject area (e.g. books, movies, products, students, tasks, tickets, etc.).
+    * Entity names and fields.
+    * Button labels, filters, and UI specifics.
 
 ---
 
 ## Common Variations to Practice
 
-Try modifying this project to practice:
-- Add "Edit task" functionality (adds input state management)
-- Add localStorage persistence (useEffect hook)
-- Add multiple todolists (nested state arrays)
-- Add drag-and-drop reordering (event handling)
-- Add task categories/tags (complex filtering)
-- Add due dates (working with Date objects)
-- Add search functionality (more derived state)
+You can extend a simple list-based app to practice:
 
-Each variation teaches additional React patterns while building on this foundation.
+* Edit item functionality (more input state management)
+* LocalStorage persistence (add `useEffect`)
+* Multiple lists (nested state arrays)
+* Drag-and-drop reordering (advanced event handling)
+* Categories/tags (more complex filtering)
+* Due dates or time-based fields (Date objects)
+* Search functionality (additional derived state)
+
+The key goal:
+**For any new project, keep the React + TypeScript patterns from this guide, but design a fresh domain model and UI every time.**
+
+
+DOn't run project for verification that it's ok. but u can "run pnpm build" for verify 
